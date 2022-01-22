@@ -20,7 +20,7 @@ public class Drive implements IDrive {
 
 
     // PID (Proportional gain may need to be changed, add other gains if needed)
-    private SmartMaxPIDController rotationControl;
+    private SparkMaxPIDController rotationControl;
     private double setP = 0.6; // << same gain from 2020
     private double setI = 0.0;
     private double setD = 0.0;
@@ -56,8 +56,8 @@ public class Drive implements IDrive {
 
         driveBase = new MecanumDrive(frontLeftMotor, frontRightMotor, rearLeftMotor, rearRightMotor);
 
-        rotationController = new SmartMaxPIDController(setP, setI, setD);
-        rotationController.enableContiousInput(-Maht.PI, Math.PI);
+        rotationController = new SparkMaxPIDController(setP, setI, setD);
+        rotationController.enableContinuousInput(-Math.PI, Math.PI);
         rotationController.setTolerance(Math.toRadians(ROTATION_TOLERANCE_DEGREES));
     }
 
