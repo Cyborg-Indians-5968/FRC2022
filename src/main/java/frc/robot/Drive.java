@@ -68,14 +68,14 @@ public class Drive implements IDrive {
 
     @Override
     public void rotateRelative(double angle) {
-        driveMode = DriveMode.IDLEORMANUAL;
+        driveMode = DriveMode.MANUAL;
         
         desiredAngle = gyroscope.getYaw() + angle; 
     }
 
     @Override
     public void rotateAbsolute(double angle) {
-        driveMode = DriveMode.IDLEORMANUAL;
+        driveMode = DriveMode.MANUAL;
 
         desiredAngle = angle;
     }
@@ -113,7 +113,7 @@ public class Drive implements IDrive {
     }
 
     public void driveManualImplementation(double forwardSpeed, double strafeSpeed) {
-        driveMode = DriveMode.IDLEORMANUAL;
+        driveMode = DriveMode.MANUAL;
 
         double absoluteForward = forwardSpeed * Math.cos(gyroscope.getYaw()) + strafeSpeed * Math.sin(gyroscope.getYaw());
         double absoluteStrafe = -forwardSpeed * Math.sin(gyroscope.getYaw()) + strafeSpeed * Math.cos(gyroscope.getYaw()); 
@@ -167,7 +167,7 @@ public class Drive implements IDrive {
 
     @Override
     public void periodic() {
-        if (driveMode == DriveMode.IDLEORMANUAL) {
+        if (driveMode == DriveMode.MANUAL) {
             manualControlPeriodic();
         } else if (driveMode == DriveMode.AUTODRIVING) {
             angularSpeed = rotationController.calculate(gyroscope.getYaw(), desiredAngle);
