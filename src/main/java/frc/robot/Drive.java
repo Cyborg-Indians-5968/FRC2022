@@ -42,7 +42,7 @@ public class Drive implements IDrive {
     TODO: find resolution, and roation tolerance for auto */
 
     public Drive(IGyroscopeSensor gyroscope) {
-        this.gryoscrope = gyroscope;
+        this.gyroscope = gyroscope;
 
         frontLeftMotor = new CANSparkMax(PortMap.CAN.FRONT_LEFT_MOTOR);
         frontRightMotor = new CANSparkMax(PortMap.CAN.FRONT_RIGHT_MOTOR);
