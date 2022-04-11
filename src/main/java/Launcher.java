@@ -19,27 +19,32 @@ public class Launcher implements ILauncher {
     private enum ShooterMode {
         IDLE,
         SHOOT,
+        REVERSE,
     }
 
     private ShooterMode shooterMode = ShooterMode.IDLE;
 
     private double intakeSpeed = 0.0;
     private double storageSpeed = 0.0;
+    private double shooterSpeed = 0.0;
 
     private static final double INTAKE_HIGH = 0.45;
     private static final double STORAGE_HIGH = 0.5;
+    private static final double STORAGE_REVERSE_SPEED_HIGH = 0.2;
+    private static final double SHOOTER_SPEED_BACKWARDS = 0.5;
   
-    private static final double AUTO_SHOOTER_ROTATIONS = 10000;
-    private static final double AUTO_STORAGE_ROTATIONS = 50;
+    private static final double AUTO_SHOOTER_ROTATIONS = 200;
+    private static final double AUTO_STORAGE_ROTATIONS = 25;
 
     private double maxOutput = 1.0;
     private double minOutput = 0.0;
     private double shooterSetPoint = 0.0;
-    private double maxRPM = 2800;
+    private double maxRPM = 2000;
 
     private enum StorageMode {
         IDLE,
         STORAGE_INTAKE,
+        STORAGE_INTAKE_REVERSE,
         ADVANCE,
         REVERSE,
     }
@@ -51,6 +56,10 @@ public class Launcher implements ILauncher {
         intakeMotor = new CANSparkMax(PortMap.CAN.INTAKE_MOTOR_CONTROLLER, MotorType.kBrushed);
         storageMotor = new CANSparkMax(PortMap.CAN.STORAGE_MOTOR_CONTROLLER, MotorType.kBrushless);
         shooterMotor = new CANSparkMax(PortMap.CAN.SHOOTER_MOTOR_CONTROLLER, MotorType.kBrushless);
+
+        intakeMotor.restoreFactoryDefaults();
+        storageMotor.restoreFactoryDefaults();
+        shooterMotor.restoreFactoryDefaults();
         
         shooterMotor.setInverted(false);
         shooterPIDController = shooterMotor.getPIDController();
@@ -83,6 +92,12 @@ public class Launcher implements ILauncher {
     }
 
     @Override
+    public void intakeReverse() {
+        mode = Mode.MANUAL;
+        storageMode = StorageMode.STORAGE_INTAKE_REVERSE;
+    }
+
+    @Override
     public void advance() {
         mode = Mode.MANUAL;
         storageMode = StorageMode.ADVANCE;
@@ -101,11 +116,27 @@ public class Launcher implements ILauncher {
     }
 
     @Override
+    public void shooterReverse() {
+        mode = Mode.MANUAL;
+        shooterMode = ShooterMode.REVERSE;
+    }
+
+    @Override
     public void autoShoot(Runnable completionRoutine) {
         mode = Mode.AUTO;
-        storageMotor.restoreFactoryDefaults();
-        shooterMotor.restoreFactoryDefaults();
+        storageMotor.getEncoder().setPosition(0.0);
+        shooterMotor.getEncoder().setPosition(0.0);
         currentCompletionRoutine = completionRoutine;
+    }
+
+    private void handleActionEnd() {
+        stop();
+        
+        if (currentCompletionRoutine != null) {
+            Runnable oldCompletionRoutine = currentCompletionRoutine;
+            currentCompletionRoutine = null;
+            oldCompletionRoutine.run();
+        }
     }
 
     @Override
@@ -116,11 +147,14 @@ public class Launcher implements ILauncher {
             if (storageMode == StorageMode.STORAGE_INTAKE) {
                 intakeSpeed = INTAKE_HIGH;
                 storageMode = StorageMode.IDLE;
+            } else if (storageMode == StorageMode.STORAGE_INTAKE_REVERSE) {
+                intakeSpeed = -INTAKE_HIGH;
+                storageMode = StorageMode.IDLE;
             } else if (storageMode == StorageMode.ADVANCE) {
                 storageSpeed = STORAGE_HIGH;
                 storageMode = StorageMode.IDLE;
             } else if (storageMode == StorageMode.REVERSE) {
-                storageSpeed = -STORAGE_HIGH;
+                storageSpeed = -STORAGE_REVERSE_SPEED_HIGH;
                 storageMode = StorageMode.IDLE;
             }
         
@@ -128,37 +162,39 @@ public class Launcher implements ILauncher {
                 shooterSetPoint = maxRPM;
                 shooterMode = ShooterMode.IDLE;
                 //Debug.logPeriodic("shooter is spinning");
+            } else if (shooterMode == ShooterMode.REVERSE) {
+                Debug.logPeriodic("Shooter is spinning in reverse");
+                shooterSpeed = -SHOOTER_SPEED_BACKWARDS;
+                shooterMode = ShooterMode.IDLE;
+                shooterMotor.set(-SHOOTER_SPEED_BACKWARDS);
             }
+
+        
             
             //Debug.logPeriodic("shooter motor RPM " + shooterMotor.getEncoder().getVelocity());
 
         } else if (mode == Mode.AUTO) {
             
-            //Debug.log("AUTO shooter");
-            /*if (shooterMotor.getEncoder().getPosition() > AUTO_SHOOTER_ROTATIONS) {
-                shooterMotor.restoreFactoryDefaults();
+            if (shooterMotor.getEncoder().getPosition() > AUTO_SHOOTER_ROTATIONS) {
             } else {
                 shooterSetPoint = maxRPM;
-                Debug.log("shooter is spinning");
             }
 
             if (shooterMotor.getEncoder().getVelocity() >= maxRPM - 100) {
                 if (storageMotor.getEncoder().getPosition() > AUTO_STORAGE_ROTATIONS) {
-                    storageMotor.restoreFactoryDefaults();
-                    stop();
-                    currentCompletionRoutine.run();
+                    handleActionEnd();
                 } else {
                     storageSpeed = STORAGE_HIGH;
                 }
     
-            }*/
+            }
 
-            shooterSetPoint = maxRPM;
-            storageSpeed = STORAGE_HIGH;
+            //shooterSetPoint = maxRPM;
+            //storageSpeed = STORAGE_HIGH;
 
-            //Debug.logPeriodic("Shooter motor rotations" + shooterMotor.getEncoder().getPosition());
-            //Debug.logPeriodic("Shooter motor speed" + shooterMotor.getEncoder().getVelocity());
-            //Debug.logPeriodic("Storage motor rotations" + storageMotor.getEncoder().getPosition());
+            Debug.logPeriodic("Shooter motor rotations" + shooterMotor.getEncoder().getPosition());
+            Debug.logPeriodic("Shooter motor speed" + shooterMotor.getEncoder().getVelocity());
+            Debug.logPeriodic("Storage motor rotations" + storageMotor.getEncoder().getPosition());
         } 
         intakeMotor.set(intakeSpeed);
         storageMotor.set(storageSpeed);

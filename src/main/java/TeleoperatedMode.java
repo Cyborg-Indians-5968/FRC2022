@@ -73,13 +73,22 @@ public class TeleoperatedMode implements IRobotMode {
             launcher.advance();
         }
 
+        if (xboxController.getPOV() == 0) {
+            launcher.shooterReverse();
+        }
+
+        if (xboxController.getPOV() == 180) {
+            launcher.intakeReverse();
+        }
+
         if (xboxController.getXButton()) {
             endgame.lower();
         }
 
-         if (xboxController.getYButton()) {
+        if (xboxController.getYButton()) {
             endgame.raise();
         }
+
      }
 
 }

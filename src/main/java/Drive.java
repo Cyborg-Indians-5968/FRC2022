@@ -100,15 +100,10 @@ public class Drive implements IDrive {
         
         mode = Mode.AUTO;
 
-        frontLeftMotor.restoreFactoryDefaults();
-        frontRightMotor.restoreFactoryDefaults();
-        rearLeftMotor.restoreFactoryDefaults();
-        rearRightMotor.restoreFactoryDefaults();
-
-        frontLeftMotor.setInverted(false);
-        frontRightMotor.setInverted(true);
-        rearLeftMotor.setInverted(false);
-        rearRightMotor.setInverted(true);
+        frontLeftMotor.getEncoder().setPosition(0.0);
+        frontRightMotor.getEncoder().setPosition(0.0);
+        rearLeftMotor.getEncoder().setPosition(0.0);
+        rearRightMotor.getEncoder().setPosition(0.0);
         
         setCompletionRoutine(completionRoutine);
         desiredDistance = distanceInches;
@@ -135,8 +130,8 @@ public class Drive implements IDrive {
     public void driveManualImplementation(double forwardSpeed, double strafeSpeed) {
         mode = Mode.MANUAL;
 
-        double absoluteForward = .8 * (forwardSpeed * Math.cos(gyroscope.getYaw()) + strafeSpeed * Math.sin(gyroscope.getYaw()));
-        double absoluteStrafe = .8 * (-forwardSpeed * Math.sin(gyroscope.getYaw()) + strafeSpeed * Math.cos(gyroscope.getYaw())); 
+        double absoluteForward = .9 * (forwardSpeed * Math.cos(gyroscope.getYaw()) + strafeSpeed * Math.sin(gyroscope.getYaw()));
+        double absoluteStrafe = .9 * (-forwardSpeed * Math.sin(gyroscope.getYaw()) + strafeSpeed * Math.cos(gyroscope.getYaw())); 
 
         this.forwardSpeed = absoluteForward;
         this.strafeSpeed = absoluteStrafe;
@@ -179,7 +174,7 @@ public class Drive implements IDrive {
         currentCompletionRoutine = completionRoutine;
     }
 
-    /*private void handleActionEnd() {
+    private void handleActionEnd() {
         stop();
         
         if (currentCompletionRoutine != null) {
@@ -187,7 +182,7 @@ public class Drive implements IDrive {
             currentCompletionRoutine = null;
             oldCompletionRoutine.run();
         }
-    }*/
+    }
 
     private void manualControlPeriodic() {
         angularSpeed = .45 * rotationController.calculate(gyroscope.getYaw(), desiredAngle);
@@ -218,10 +213,8 @@ public class Drive implements IDrive {
             //Debug.logPeriodic("Front left encoder: " + frontLeftMotor.getEncoder().getPosition());
             //Debug.logPeriodic("Front right encoder: " + frontRightMotor.getEncoder().getPosition());
             if (averageDistanceTraveled > desiredDistance) {
-                Debug.logPeriodic("stopped");
-                stop();
-                currentCompletionRoutine.run();
-                //handleActionEnd();
+                Debug.log("stopped");
+                handleActionEnd();
             } 
         } else {
             throw new IllegalArgumentException("The drive base controller is in an invalid drive mode.");
